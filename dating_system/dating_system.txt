@@ -1,0 +1,180 @@
+#the ontology from facebook
+#T-box
+(define-concept Person Person)
+(define-concept School School)
+(define-concept Url Url)
+(define-concept Group Group)
+(define-concept Place Place)
+
+(disjoint Person School Url Group Place)
+(implies Man Person)
+(implies Woman Person)
+
+(define-concept Bob Bob) #Let's call Bob with capital "B" the one who is searching
+
+#A-box
+#age difference property
+(functional AgeDifference)
+(range AgeDifference *integer* 0 100)
+
+#last contact property in days
+(functional LastContact)
+(range LastContact *integer* 0 40000)   #value in days 40000 is more than 100 years 
+
+#places distance, to get the distance of two places in the real situation i highly recommend usage of the google distance matrix API
+(functional Distance)
+(range Distance *integer* 0 80000) #value 80000 is about twice around the Earth, we do not suppose that anyone can live further
+
+
+#schools that were studied by our persons
+(instance cvut School)
+(instance uk School)
+(instance mit School)
+(instance eth School)
+
+#places where can person live
+(instance praha Place)
+(instance brno Place)
+(instance newYork Place)
+(instance berlin Place)
+
+#pages that can be liked
+(instance vine Url)
+(instance beer Url)
+(instance animals Url)
+(instance traveling Url)
+
+#groups
+(instance bugLovers Group)
+(instance algorithmslovers Group)
+(instance dataScientists Group)
+
+#persons with the value from the last contact, age difference and distance (not applicable for bob)
+(instance bob (and Man Bob))
+(instance lucie (and Woman (= AgeDifference 5) (= LastContact 10) (=  Distance 402)))        #some functional values that we certainly can get from the facebook 
+(instance klara (and Woman (= AgeDifference 3) (= LastContact 702) (=  Distance 8562)))
+(instance anna (and Woman (= AgeDifference 2) (= LastContact 35000) (=  Distance 12)))
+(instance jan (and Man (= AgeDifference 1) (= LastContact 556) (= Distance 2)))
+
+
+#friendOf relations creating
+(symmetric friend)
+(related bob lucie friend)
+(related lucie klara friend)
+(related klara anna friend)
+(related lucie jan friend)
+
+#likes
+#like concept for bob
+(define-concept Like Like)
+(instance wine Like)
+(instance traveling Like)
+
+#likes relation creating for others than bob
+(related lucie beer like)
+(related klara animals like)
+(related klara wine like)
+(related anna traveling like)
+(related anna animals like)
+
+#past schools
+#past school concept for bob
+(define-concept PastSchool PastSchool)
+(instance cvut PastSchool)
+(instance mit PastSchool)
+
+#studied at relations creating
+(related lucie uk studiedAt)
+(related lucie cvut studiedAt)
+(related klara uk studiedAt)
+(related klara eth studiedAt)
+(related anna cvut studiedAt)
+
+#origin
+#from concept for bob
+(define-concept From From)
+(instance praha From)
+
+#is from relation creating
+(related lucie brno isFrom)
+(related klara praha isFrom)
+(related anna newYork isFrom)
+
+#groups
+#group concept for bob
+(define-concept Group Group)
+(instance bugLovers Group)
+(instance dataScientists Group)
+
+#is member of group relation creating
+(related lucie algorithmsLovers member)
+(related lucie dataScientists member)
+(related anna dataScientists member)
+
+
+#matchmaking
+#helping fuzzy concepts
+#age differnece
+(define-fuzzy-concept smallAgeDifference left-shoulder(0,100,2,10))
+(define-fuzzy-concept middleAgeDifference trapezoidal(0,100,5,10,12,20))
+(define-fuzzy-concept highAgeDifference right-shoulder(0,100,15,30))
+
+#last contact
+(define-fuzzy-concept shortTime left-shoulder(0,40000,10,50))
+(define-fuzzy-concept mediumTime trapezoidal(0,40000,30,100,300,365))
+(define-fuzzy-concept almostNever right-shoulder(0,40000,365,600))
+
+#distance
+(define-fuzzy-concept close left-shoulder(0,80000,10,100))
+(define-fuzzy-concept mediumDistance trapezoidal(0,80000,50,200,400,500))
+(define-fuzzy-concept far right-shoulder(0,80000,300,1000))
+
+#definition of matching rules
+#comented rules are not used in my case, but can be used in other cases of bobs preference selections
+#in case that bob has selected small age difference and close distance in his preferences
+#(define-concept Rule1 (l-and (some AgeDifference smallAgeDifference) (some LastContact shortTime) (some Distance close)))     #give some positive points to anyone almost same age living close and short time from the last contact
+#(define-concept Rule2 (l-and (some AgeDifference smallAgeDifference) (some LastContact mediumTime) (some Distance close)))
+#(define-concept Rule3 (l-and (some AgeDifference smallAgeDifference) (some LastContact almostNever) (some Distance close)))
+
+#in case that bob has selected maximum medium age difference and close distance in his preferences
+#(define-concept Rule1 (l-and (g-or (some AgeDifference smallAgeDifference) (some AgeDifference middleAgeDifference)) (some LastContact shortTime) (some Distance close)))  
+#(define-concept Rule2 (l-and (g-or (some AgeDifference smallAgeDifference) (some AgeDifference middleAgeDifference)) (some LastContact mediumTime) (some Distance close)))
+#(define-concept Rule3 (l-and (g-or (some AgeDifference smallAgeDifference) (some AgeDifference middleAgeDifference)) (some LastContact almostNever) (some Distance close)))
+
+#in case when bob does not care about the age and also about the distance
+#(define-concept Rule1 (some LastContact shortTime))  
+#(define-concept Rule2 (some LastContact mediumTime))
+#(define-concept Rule3 (some LastContact almostNever))
+
+#in case that bob has selected small age difference and he does not care about the distance at all
+#this situation was considered as the one that was selected by the bob
+#(define-concept Rule1 (l-and (some AgeDifference smallAgeDifference) (some LastContact shortTime)))     
+#(define-concept Rule2 (l-and (some AgeDifference smallAgeDifference) (some LastContact mediumTime)))
+#(define-concept Rule3 (l-and (some AgeDifference smallAgeDifference) (some LastContact almostNever)))
+
+#in case that bob does not care about the age difference at all and he preffers close distance in his preferences
+#(define-concept Rule1 (l-and (some LastContact shortTime) (some Distance close)))  
+#(define-concept Rule2 (l-and (some LastContact mediumTime) (some Distance close)))
+#(define-concept Rule3 (l-and (some LastContact almostNever) (some Distance close)))
+
+#in case that bob has selected small age difference and medium distance at maximum in his preferences
+(define-concept Rule1 (l-and (some AgeDifference smallAgeDifference) (some LastContact shortTime) (g-or (some Distance close) (some Distance mediumDistance))))     
+(define-concept Rule2 (l-and (some AgeDifference smallAgeDifference) (some LastContact mediumTime) (g-or (some Distance close) (some Distance mediumDistance))))
+(define-concept Rule3 (l-and (some AgeDifference smallAgeDifference) (some LastContact almostNever) (g-or (some Distance close) (some Distance mediumDistance))))
+
+(define-concept Rule4 (some like Like))             #giving plus points to anyone who has at least one same like
+(define-concept Rule5 (some studiedAt PastSchool))  #giving plus points to anyone who has same at least one previous or current school
+(define-concept Rule6 (some isFrom From))           #giving plus points to anyone who was born in the same town
+(define-concept Rule7 (some member Group))          #giving plus points to anyone who is member of at least one same group as the bob
+
+(define-concept Rule8 (and (some friend (some friend Bob)) (some LastContact almostNever)))                  #some plus points for friend of friends
+(define-concept Rule9 (and (some friend (some friend (some friend Bob))) (some LastContact almostNever)))    #some plus points (smaller than in previous case) for friend of friends of friends
+
+#(define-concept GoodMatch (l-and Man (w-sum (0.05 Rule1) (0.1 Rule2) (0.25 Rule3) (0.1 Rule4) (0.1 Rule5) (0.05 Rule6) (0.1 Rule7) (0.2 Rule8) (0.05 Rule9))))
+(define-concept GoodMatch (l-and Woman (w-sum (0.05 Rule1) (0.1 Rule2) (0.25 Rule3) (0.1 Rule4) (0.1 Rule5) (0.05 Rule6) (0.1 Rule7) (0.2 Rule8) (0.05 Rule9)))) #gender in here is possible to be setted by Bob
+
+(min-sat? GoodMatch lucie)  #0.2303
+(min-sat? GoodMatch klara)  #0.35
+(min-sat? GoodMatch anna)   #0.5944
+(min-sat? GoodMatch jan)    #0
+
